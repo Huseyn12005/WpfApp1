@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,6 +16,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Xml.Linq;
 
 namespace WpfApp1
 {
@@ -22,12 +25,24 @@ namespace WpfApp1
     /// </summary>
     public partial class MainWindow : Window
     {
+        public event PropertyChangedEventHandler? PropertyChanged;
+        public void OnPropertyChanged([CallerMemberName] string? propertyName = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         public ObservableCollection<Thread> CreatedThreads { get; set; }
         public ObservableCollection<Thread> WaitingThreads { get; set; }
         public ObservableCollection<Thread> WorkingThreads { get; set; }
 
-
+        private int _count { get; set; }
         Semaphore semaphore{get; set;}
+
+        public int count
+        {
+            get { return _count; }
+            set
+            {
+                _count = value;
+                OnPropertyChanged();
+            }
+        }
 
         public MainWindow()
         {
@@ -42,20 +57,21 @@ namespace WpfApp1
             CreatedThreads = new ObservableCollection<Thread>();
             WaitingThreads = new ObservableCollection<Thread>();
             WorkingThreads = new ObservableCollection<Thread>();
-          semaphore = new Semaphore((int)Combo.SelectedItem, (int)Combo.SelectedItem, "Orucov");
+          
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            Thread thread = new Thread(() =>
+            int? selectedValue = Combo.SelectedItem as int?;
+
+                semaphore = new Semaphore(selectedValue.Value, selectedValue.Value, "Ismayilov");
+                Thread thread = new Thread(() =>
             {
                 var a = Thread.CurrentThread;
                 System.Windows.Application.Current.Dispatcher.Invoke(() => {
                     CreatedThreads.Remove(a);
                     WaitingThreads.Add(a);
                 });
-              
-
                 semaphore.WaitOne();
 
                 Thread.Sleep(5000);
@@ -83,6 +99,10 @@ namespace WpfApp1
             thread?.Start();
         }
 
+        private void Combo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            count = (int)Combo.SelectedItem;
 
+        }
     }
 }
